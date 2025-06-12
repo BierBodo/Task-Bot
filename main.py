@@ -2,21 +2,18 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import os
-
+import json  # NEU
 from flask import Flask
 from threading import Thread
 
 app = Flask('')
 
-
 @app.route('/')
 def home():
     return "✅ Bot läuft!"
 
-
 def keep_alive():
     Thread(target=lambda: app.run(host='0.0.0.0', port=8080)).start()
-
 
 # ✅ Bot-Intents aktivieren
 intents = discord.Intents.default()
@@ -26,7 +23,21 @@ intents.members = True
 intents.reactions = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
-aufgabenlisten = {}
+
+DATEI = "aufgabenlisten.json"  # NEU
+
+# Lade JSON falls vorhanden (oder leeres Dict)
+if os.path.exists(DATEI):  # NEU
+    with open(DATEI, "r", encoding="utf-8") as f:  # NEU
+        aufgabenlisten = json.load(f)  # NEU
+else:  # NEU
+    aufgabenlisten = {}  # NEU
+
+
+# Hilfsfunktion zum Speichern
+def save_aufgabenlisten():  # NEU
+    with open(DATEI, "w", encoding="utf-8") as f:  # NEU
+        json.dump(aufgabenlisten, f, ensure_ascii=False, indent=4)  # NEU
 
 # 1️⃣–🔟
 emoji_zahlen = {
@@ -42,7 +53,6 @@ emoji_zahlen = {
     "🔟": 10
 }
 
-
 # ✅ Bot online
 @bot.event
 async def on_ready():
@@ -52,7 +62,6 @@ async def on_ready():
         print(f"✅ Bot ist online als {bot.user}")
     except Exception as e:
         print(f"❌ Fehler beim Synchronisieren der Commands: {e}")
-
 
 # 📋 /liste_erstellen
 @bot.tree.command(name="liste_erstellen",
@@ -64,9 +73,9 @@ async def liste_erstellen(interaction: discord.Interaction, name: str):
             "❗Diese Liste existiert schon.", ephemeral=True)
     else:
         aufgabenlisten[name] = {"tasks": []}
+        save_aufgabenlisten()  # NEU
         await interaction.response.send_message(
             f"✅ Liste '{name}' wurde erstellt.", ephemeral=True)
-
 
 # ➕ /liste_hinzufuegen
 @bot.tree.command(name="liste_hinzufuegen",
@@ -84,9 +93,9 @@ async def liste_hinzufuegen(interaction: discord.Interaction, name: str,
             "❗Maximal 10 Aufgaben pro Liste erlaubt.", ephemeral=True)
         return
     aufgabenlisten[name]["tasks"].append({"text": aufgabe, "done": False})
+    save_aufgabenlisten()  # NEU
     await interaction.response.send_message(
         f"✅ Aufgabe hinzugefügt: {aufgabe}", ephemeral=True)
-
 
 # 📤 /liste_posten
 @bot.tree.command(name="liste_posten",
@@ -118,7 +127,6 @@ async def liste_posten(interaction: discord.Interaction, name: str):
     await interaction.response.send_message("📋 Liste gepostet.",
                                             ephemeral=True)
 
-
 # ❌ /liste_loeschen
 @bot.tree.command(name="liste_loeschen",
                   description="Lösche eine vorhandene Aufgabenliste")
@@ -130,9 +138,9 @@ async def liste_loeschen(interaction: discord.Interaction, name: str):
         return
 
     del aufgabenlisten[name]
+    save_aufgabenlisten()  # NEU
     await interaction.response.send_message(
         f"🗑️ Liste '{name}' wurde gelöscht.", ephemeral=True)
-
 
 # 📝 /listen_anzeigen
 @bot.tree.command(name="listen_anzeigen",
@@ -163,8 +171,7 @@ async def listen_anzeigen(interaction: discord.Interaction):
                           color=0x0099ff)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
-
-# 🔄 Reaktionen ausweTTrten
+# 🔄 Reaktionen auswerten
 @bot.event
 async def on_raw_reaction_add(payload):
     if payload.user_id == bot.user.id:
@@ -211,6 +218,8 @@ async def on_raw_reaction_add(payload):
     task["by"].append(member.display_name)
     task["done"] = True  # Aufgabe als erledigt markieren
 
+    save_aufgabenlisten()  # NEU
+
     # Embed aktualisieren
     new_description = ""
     for i, t in enumerate(liste["tasks"]):
@@ -227,7 +236,6 @@ async def on_raw_reaction_add(payload):
                               description=new_description,
                               color=0x00ff00)
     await message.edit(embed=new_embed)
-
 
 @bot.event
 async def on_raw_reaction_remove(payload):
@@ -274,6 +282,8 @@ async def on_raw_reaction_remove(payload):
     if not task["by"]:
         task["done"] = False
 
+    save_aufgabenlisten()  # NEU
+
     # Embed aktualisieren
     new_description = ""
     for i, t in enumerate(liste["tasks"]):
@@ -290,7 +300,6 @@ async def on_raw_reaction_remove(payload):
                               description=new_description,
                               color=0x00ff00)
     await message.edit(embed=new_embed)
-
 
 
 keep_alive()
