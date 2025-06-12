@@ -40,13 +40,6 @@ def lade_aufgaben():
 
 lade_aufgaben()
 
-# JSON einlesen beim Start
-if os.path.exists("aufgaben.json"):
-    with open("aufgaben.json", "r", encoding="utf-8") as f:
-        aufgabenlisten = json.load(f)
-        print("📂 Aufgaben aus aufgaben.json geladen.")
-
-
 # Speichern der JSON
 def speichere_aufgaben():
     with open("aufgaben.json", "w", encoding="utf-8") as f:
