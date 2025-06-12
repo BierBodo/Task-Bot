@@ -28,6 +28,18 @@ intents.reactions = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 aufgabenlisten = {}
 
+# 🔁 Beim Start Daten laden, falls vorhanden
+def lade_aufgaben():
+    global aufgabenlisten
+    if os.path.exists("aufgaben.json"):
+        with open("aufgaben.json", "r", encoding="utf-8") as f:
+            aufgabenlisten = json.load(f)
+        print("📂 Aufgaben aus Datei geladen.")
+    else:
+        print("📂 Keine vorhandene Aufgaben-Datei gefunden.")
+
+lade_aufgaben()
+
 # JSON einlesen beim Start
 if os.path.exists("aufgaben.json"):
     with open("aufgaben.json", "r", encoding="utf-8") as f:
