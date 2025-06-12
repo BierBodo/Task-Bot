@@ -19,7 +19,6 @@ def keep_alive():
     Thread(target=lambda: app.run(host='0.0.0.0', port=8080)).start()
 
 
-# ✅ Bot-Intents aktivieren
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
@@ -29,18 +28,23 @@ intents.reactions = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 aufgabenlisten = {}
 
-# 1️⃣–🔟
+# JSON einlesen beim Start
+if os.path.exists("aufgaben.json"):
+    with open("aufgaben.json", "r", encoding="utf-8") as f:
+        aufgabenlisten = json.load(f)
+        print("📂 Aufgaben aus aufgaben.json geladen.")
+
+
+# Speichern der JSON
+def speichere_aufgaben():
+    with open("aufgaben.json", "w", encoding="utf-8") as f:
+        json.dump(aufgabenlisten, f, indent=4, ensure_ascii=False)
+        print("💾 Aufgaben gespeichert.")
+
+
 emoji_zahlen = {
-    "1️⃣": 1,
-    "2️⃣": 2,
-    "3️⃣": 3,
-    "4️⃣": 4,
-    "5️⃣": 5,
-    "6️⃣": 6,
-    "7️⃣": 7,
-    "8️⃣": 8,
-    "9️⃣": 9,
-    "🔟": 10
+    "1️⃣": 1, "2️⃣": 2, "3️⃣": 3, "4️⃣": 4, "5️⃣": 5,
+    "6️⃣": 6, "7️⃣": 7, "8️⃣": 8, "9️⃣": 9, "🔟": 10
 }
 
 
@@ -54,13 +58,6 @@ async def on_ready():
         print(f"❌ Fehler beim Synchronisieren der Commands: {e}")
 
 
-# 🔄 Hilfsfunktion zum Speichern
-def speichere_aufgaben():
-    with open("aufgaben.json", "w", encoding="utf-8") as f:
-        json.dump(aufgabenlisten, f, indent=4, ensure_ascii=False)
-
-
-# 💾 Slash-Command zum Backup per DM
 @bot.tree.command(name="backup_erstellen", description="Sichert die Listen als JSON-Datei.")
 async def backup_erstellen(interaction: discord.Interaction):
     speichere_aufgaben()
@@ -71,7 +68,6 @@ async def backup_erstellen(interaction: discord.Interaction):
         await interaction.response.send_message("❌ Ich konnte dir keine DM schicken. Prüfe deine Privatsphäre-Einstellungen.", ephemeral=True)
 
 
-# 📋 /liste_erstellen
 @bot.tree.command(name="liste_erstellen", description="Erstelle eine neue Aufgabenliste")
 @app_commands.describe(name="Name der Liste")
 async def liste_erstellen(interaction: discord.Interaction, name: str):
@@ -79,10 +75,10 @@ async def liste_erstellen(interaction: discord.Interaction, name: str):
         await interaction.response.send_message("❗Diese Liste existiert schon.", ephemeral=True)
     else:
         aufgabenlisten[name] = {"tasks": []}
+        speichere_aufgaben()
         await interaction.response.send_message(f"✅ Liste '{name}' wurde erstellt.", ephemeral=True)
 
 
-# ➕ /liste_hinzufuegen
 @bot.tree.command(name="liste_hinzufuegen", description="Füge eine Aufgabe zu einer Liste hinzu")
 @app_commands.describe(name="Name der Liste", aufgabe="Die Aufgabe, die hinzugefügt werden soll")
 async def liste_hinzufuegen(interaction: discord.Interaction, name: str, aufgabe: str):
@@ -93,10 +89,10 @@ async def liste_hinzufuegen(interaction: discord.Interaction, name: str, aufgabe
         await interaction.response.send_message("❗Maximal 10 Aufgaben pro Liste erlaubt.", ephemeral=True)
         return
     aufgabenlisten[name]["tasks"].append({"text": aufgabe, "done": False})
+    speichere_aufgaben()
     await interaction.response.send_message(f"✅ Aufgabe hinzugefügt: {aufgabe}", ephemeral=True)
 
 
-# 📤 /liste_posten
 @bot.tree.command(name="liste_posten", description="Poste eine Liste im aktuellen Channel")
 @app_commands.describe(name="Name der Liste")
 async def liste_posten(interaction: discord.Interaction, name: str):
@@ -119,7 +115,6 @@ async def liste_posten(interaction: discord.Interaction, name: str):
     await interaction.response.send_message("📋 Liste gepostet.", ephemeral=True)
 
 
-# ❌ /liste_loeschen
 @bot.tree.command(name="liste_loeschen", description="Lösche eine vorhandene Aufgabenliste")
 @app_commands.describe(name="Name der zu löschenden Liste")
 async def liste_loeschen(interaction: discord.Interaction, name: str):
@@ -127,16 +122,15 @@ async def liste_loeschen(interaction: discord.Interaction, name: str):
         await interaction.response.send_message("❗Diese Liste existiert nicht.", ephemeral=True)
         return
     del aufgabenlisten[name]
+    speichere_aufgaben()
     await interaction.response.send_message(f"🗑️ Liste '{name}' wurde gelöscht.", ephemeral=True)
 
 
-# 📝 /listen_anzeigen
 @bot.tree.command(name="listen_anzeigen", description="Zeige alle gespeicherten Listen an")
 async def listen_anzeigen(interaction: discord.Interaction):
     if not aufgabenlisten:
         await interaction.response.send_message("📋 Keine Listen gespeichert.", ephemeral=True)
         return
-
     description = ""
     for name, liste in aufgabenlisten.items():
         anzahl_aufgaben = len(liste["tasks"])
@@ -148,12 +142,10 @@ async def listen_anzeigen(interaction: discord.Interaction):
         if len(liste["tasks"]) > 3:
             description += f"  ... und {len(liste['tasks']) - 3} weitere\n"
         description += "\n"
-
     embed = discord.Embed(title="📋 Alle gespeicherten Listen", description=description, color=0x0099ff)
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
-# 🔄 Reaktionen auswerten
 @bot.event
 async def on_raw_reaction_add(payload):
     if payload.user_id == bot.user.id:
@@ -184,8 +176,8 @@ async def on_raw_reaction_add(payload):
         return
     task["by"].append(member.display_name)
     task["done"] = True
+    speichere_aufgaben()
 
-    # Embed aktualisieren
     new_description = ""
     for i, t in enumerate(liste["tasks"]):
         status = "✅" if t["done"] else "❌"
@@ -226,8 +218,8 @@ async def on_raw_reaction_remove(payload):
     task["by"].remove(member.display_name)
     if not task["by"]:
         task["done"] = False
+    speichere_aufgaben()
 
-    # Embed aktualisieren
     new_description = ""
     for i, t in enumerate(liste["tasks"]):
         status = "✅" if t["done"] else "❌"
