@@ -1,0 +1,62 @@
+{
+    "Dringend": {
+        "tasks": [
+            {
+                "text": "Jasmium",
+                "done": false
+            },
+            {
+                "text": "Jasmium",
+                "done": false
+            },
+            {
+                "text": "Jasmium",
+                "done": false
+            },
+            {
+                "text": "Spicesand",
+                "done": false
+            },
+            {
+                "text": "Spicesand",
+                "done": false
+            },
+            {
+                "text": "Spicesand",
+                "done": false
+            },
+            {
+                "text": "Stravidiummasse",
+                "done": false
+            },
+            {
+                "text": "Stravidiummasse",
+                "done": false
+            },
+            {
+                "text": "Titanerz",
+                "done": false
+            },
+            {
+                "text": "Titanerz",
+                "done": false
+            }
+        ]
+    },
+    "Daily": {
+        "tasks": [
+            {
+                "text": "Leichen sammeln",
+                "done": false
+            },
+            {
+                "text": "Leichen sammeln",
+                "done": false
+            },
+            {
+                "text": "Leichen sammeln",
+                "done": false
+            }
+        ]
+    }
+}
